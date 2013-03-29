@@ -19,7 +19,7 @@ struct mat3x1 {
 	float f[3][1];
 };
 
-const struct mat3x3 rgb2ycbcr_mat = {
+static const struct mat3x3 rgb2ycbcr_mat = {
 
 	{
 		{ 0.299f, 0.587f, 0.114f},
@@ -28,7 +28,7 @@ const struct mat3x3 rgb2ycbcr_mat = {
 	}
 };
 
-const struct mat3x3 ycbcr2rgb_mat = {
+static const struct mat3x3 ycbcr2rgb_mat = {
 
 	{
 		{ 1.000f, 0.000f, 1.400f},

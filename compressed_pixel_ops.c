@@ -10,6 +10,8 @@
 #include "internal.h"
 
 #include<txc_dxtn.h>
+#include<csquish.h>
+
 #include<assert.h>
 
 struct imgPixel imgReadCompressed(const struct imgImage *img, int x, int y) {
@@ -57,6 +59,34 @@ static int neet_to_reformat(const struct imgImage *dst, const struct imgImage *s
   return ( src->format & IMG_FMT_RGB24 ) != IMG_FMT_RGB24;
 }
 
+static int glFormatToCSquishFormat( GLenum glFmt ) {
+  
+  switch(glFmt) {
+    case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+      return SQUISH_kDxt1 | SQUISH_kColourIterativeClusterFit;
+    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+      return SQUISH_kDxt3 | SQUISH_kColourIterativeClusterFit;
+    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+      return SQUISH_kDxt5 | SQUISH_kColourIterativeClusterFit;
+  }
+  assert(0);
+}
+
+static const char * glFormatToString( GLenum glFmt ) {
+  
+  switch(glFmt) {
+    case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+      return "SQUISH_kDxt1 | SQUISH_kColourIterativeClusterFit";
+    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+      return "SQUISH_kDxt3 | SQUISH_kColourIterativeClusterFit";
+    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+      return "SQUISH_kDxt5 | SQUISH_kColourIterativeClusterFit";
+  }
+  assert(0);
+}
+
 void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
   
   // TODO: unlike other pixel operations, this can fail. ENOMEM etc. HANDLE IT
@@ -72,18 +102,21 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
   //////////////////////////////////////////////////
   GLenum gl_fmt;
   
-  if(dst->format & IMG_FMT_COMPONENT_DXT1) {
+  if((dst->format & IMG_FMT_COMPONENT_DXTn) == IMG_FMT_COMPONENT_DXT1 ) {
     
-    components = 3;
+//  components = 3;
+    components = 4;
     
     gl_fmt = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
     
-    if(src->format != IMG_FMT_RGB24) {
+//  if(src->format != IMG_FMT_RGB24) {
+    if(src->format != IMG_FMT_RGBA32) {
       
       src = NULL;
       err = imgAllocImage(&src);
       assert(err == IMG_OKAY);
-      src->format = IMG_FMT_RGB24;
+//    src->format = IMG_FMT_RGB24;
+      src->format = IMG_FMT_RGBA32;
       src->width = _src->width;
       src->height = _src->height;
       err = imgAllocPixelBuffers(src);
@@ -101,6 +134,8 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
       case IMG_FMT_COMPONENT_DXT5:
 	gl_fmt = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 	break;
+      default:
+	assert(0);
     }
     
     if( neet_to_reformat( dst, src ) ) {
@@ -122,7 +157,9 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
     }
   }
   
-  tx_compress_dxtn( components, src->width, src->height, src->data.channel[0], gl_fmt, dst->data.channel[0], dst->linesize[0] );
+//tx_compress_dxtn( components, src->width, src->height, src->data.channel[0], gl_fmt, dst->data.channel[0], dst->linesize[0] );
+//printf("squish_CompressImage(%d,%d,%s)\n", src->width, src->height, glFormatToString(gl_fmt));
+  squish_CompressImage( src->data.channel[0], src->width, src->height, dst->data.channel[0], glFormatToCSquishFormat(gl_fmt) ,NULL );
   
   if(src != _src)
     imgFreeAll(src);

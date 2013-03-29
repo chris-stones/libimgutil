@@ -52,19 +52,14 @@ static float read_packed5(const struct imgData *data, int offset) {
 
 	unsigned short s = *((unsigned short*)data->channel[0]);
 
-//	s = ((s >> 8) | (s << 8));
-
 	switch(offset) {
 	case 0:
-//		return 1.0f;
 		s = (((s) >> 10) & 0x1f);
 		break;
 	case 1:
-//		return 0.0f;
 		s = (((s) >>  5) & 0x1f);
 		break;
 	case 2:
-//		return 0.0f;
 		s = (((s)      ) & 0x1f);
 		break;
 	default:
