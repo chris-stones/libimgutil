@@ -11,8 +11,9 @@
 
 #include<txc_dxtn.h>
 #include<csquish.h>
-
 #include<assert.h>
+
+#include <pthread.h>
 
 struct imgPixel imgReadCompressed(const struct imgImage *img, int x, int y) {
 
@@ -87,6 +88,74 @@ static const char * glFormatToString( GLenum glFmt ) {
   assert(0);
 }
 
+struct job_struct {
+  
+  unsigned char const* rgba;
+  void * blocks;
+  int w;
+  int h;
+  int flags;
+  float * metric;
+};
+
+static void* thread_func(void * arg) {
+ 
+  struct job_struct * job = (struct job_struct *)arg;
+  
+  squish_CompressImage( job->rgba, job->w, job->h, job->blocks, job->flags, job->metric );
+  
+  printf("finished job %d,%d\n", job->w, job->h);
+  
+  free(job);
+  
+  return NULL;
+}
+
+void squish_CompressImage_mt( int number_of_threads, unsigned char const* rgba, int width, int height, void* blocks, int flags, float* metric ) {
+  
+  if( number_of_threads > 1 ) {
+    
+    int thread;
+    int h=0;
+    int y=0;
+    int hblocks = ((((height+3)/4)+number_of_threads)/number_of_threads);
+    
+    pthread_t  * threads = alloca( sizeof(pthread_t) * number_of_threads );
+    
+    for(thread=0;thread<number_of_threads;thread++) {
+      
+      struct job_struct * job = malloc(sizeof( struct job_struct ) );
+      
+      h = 4 * hblocks;
+      if( ( y + h ) > height )
+	h = height - y;
+      
+      job->w = width;
+      job->h = h;
+      job->flags = flags;
+      job->metric = metric;
+      job->rgba = rgba + job->w * job->h * 4;
+      
+      printf("starting job %d - %d,%d\n", thread, y, h);
+        
+      if( flags & SQUISH_kDxt1)
+	job->blocks = ((char*)blocks) + (((width+3)/4) * ((y+3)/4) *  8 );
+      else
+	job->blocks = ((char*)blocks) + (((width+3)/4) * ((y+3)/4) * 16 );
+      
+      y+=h;
+      
+      pthread_create( threads + thread, NULL, &thread_func, job );
+    }
+    
+    for(; thread>0; thread--)
+      pthread_join( threads[thread-1], NULL );
+  }
+  else
+    squish_CompressImage( rgba, width, height, blocks, flags, metric );
+  
+}
+
 void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
   
   // TODO: unlike other pixel operations, this can fail. ENOMEM etc. HANDLE IT
@@ -158,8 +227,8 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
   }
   
 //tx_compress_dxtn( components, src->width, src->height, src->data.channel[0], gl_fmt, dst->data.channel[0], dst->linesize[0] );
-//printf("squish_CompressImage(%d,%d,%s)\n", src->width, src->height, glFormatToString(gl_fmt));
-  squish_CompressImage( src->data.channel[0], src->width, src->height, dst->data.channel[0], glFormatToCSquishFormat(gl_fmt) ,NULL );
+//squish_CompressImage( src->data.channel[0], src->width, src->height, dst->data.channel[0], glFormatToCSquishFormat(gl_fmt) ,NULL );
+  squish_CompressImage_mt( 8, src->data.channel[0], src->width, src->height, dst->data.channel[0], glFormatToCSquishFormat(gl_fmt) ,NULL );
   
   if(src != _src)
     imgFreeAll(src);
