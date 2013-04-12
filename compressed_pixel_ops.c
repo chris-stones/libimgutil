@@ -104,8 +104,6 @@ static void* thread_func(void * arg) {
   
   squish_CompressImage( job->rgba, job->w, job->h, job->blocks, job->flags, job->metric );
   
-  printf("finished job %d,%d\n", job->w, job->h);
-  
   free(job);
   
   return NULL;
@@ -134,7 +132,7 @@ void squish_CompressImage_mt( int number_of_threads, unsigned char const* rgba, 
       job->h = h;
       job->flags = flags;
       job->metric = metric;
-      job->rgba = rgba + job->w * job->h * 4;
+      job->rgba = rgba + job->w * y * 4;
       
       printf("starting job %d - %d,%d\n", thread, y, h);
         
