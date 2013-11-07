@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(imgutil)
 
+set(CMAKE_C_FLAGS_RELEASE "-O4 -march=native")
+
 add_definitions(-DWITH_IMGU_ROTATE)
 add_definitions(-DWITH_IMGU_PAD)
 

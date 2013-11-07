@@ -25,6 +25,9 @@ int imguCopyRect	(struct imgImage *dst, const struct imgImage *src, int dx, int 
 int imguRotateCW	(struct imgImage **rotated, const struct imgImage *src);
 int imguPad		(struct imgImage **padded, const struct imgImage *src, int top, int bot, int left, int right);
 
+int imguBinaryCompare	(struct imgImage *a,struct imgImage *b);
+int imguBinaryHash32	(struct imgImage *a);
+
 #ifdef __cplusplus
 } /*** extern "C" { ***/
 #endif

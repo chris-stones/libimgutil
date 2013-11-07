@@ -96,6 +96,19 @@ static void write_packed5(struct imgData *dst, int offset, float src) {
 	(*((unsigned short*)dst->channel[0])) = s;
 }
 
+static float read_packed4(const struct imgData *data, int offset) {
+
+	return((float)((*(((const unsigned char *)data->channel[0]) + (offset >> 1)) >> ((!(offset&1)) << 2)) & 0xff)) / 15.0f;
+}
+
+static void write_packed4(struct imgData *dst, int offset, float src) {
+
+	unsigned char * d = (((unsigned char *)dst->channel[0]) + (offset >> 1));
+
+	*d = (*d & (0xff                  << (( (offset&1)) << 2))) |
+         (unsigned char)(src * 15.0f) << ((!(offset&1)) << 2)   ;
+}
+
 static float read_packed8(const struct imgData *data, int offset) {
 
 	return ((float)(*(((unsigned char *)data->channel[0])+offset))) / 255.0f;
@@ -140,6 +153,15 @@ read_fnptr get_read_function(enum imgFormat fmt) {
 
 			return &read_packed5;
 		}
+
+		{
+			// read 4-4-4-4
+			int mask = (IMG_FMT_COMPONENT_PACKED16 | IMG_FMT_COMPONENT_RED | IMG_FMT_COMPONENT_GREEN | IMG_FMT_COMPONENT_BLUE | IMG_FMT_COMPONENT_ALPHA);
+			if((fmt & mask) == mask) {
+
+				return &read_packed4;
+			}
+		}
 	}
 
 	assert("todo:" && 0);
@@ -162,6 +184,15 @@ write_fnptr get_write_function(enum imgFormat fmt) {
 
 		if(fmt & (IMG_FMT_COMPONENT_PACKED15))
 			return &write_packed5;
+
+		{
+			// write 4-4-4-4
+			int mask = (IMG_FMT_COMPONENT_PACKED16 | IMG_FMT_COMPONENT_RED | IMG_FMT_COMPONENT_GREEN | IMG_FMT_COMPONENT_BLUE | IMG_FMT_COMPONENT_ALPHA);
+			if((fmt & mask) == mask) {
+
+				return &write_packed4;
+			}
+		}
 	}
 
 	assert("todo:" && 0);
