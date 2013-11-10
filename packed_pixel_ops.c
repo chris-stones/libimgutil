@@ -98,15 +98,21 @@ static void write_packed5(struct imgData *dst, int offset, float src) {
 
 static float read_packed4(const struct imgData *data, int offset) {
 
-	return((float)((*(((const unsigned char *)data->channel[0]) + (offset >> 1)) >> ((!(offset&1)) << 2)) & 0xff)) / 15.0f;
+	const unsigned short shift = 4 * (3 - offset);
+	unsigned short * d = ((unsigned short *)data->channel[0]);
+
+	const unsigned short nib = (*d >> shift) & 0x000f;
+
+	return ((float)(nib)) / 15,0f;
 }
 
 static void write_packed4(struct imgData *dst, int offset, float src) {
 
-	unsigned char * d = (((unsigned char *)dst->channel[0]) + (offset >> 1));
+	const unsigned short shift = 4 * (3 - offset);
+	const unsigned short nib  = ((unsigned short)(src * 15.0f)) & 0x000f;
+	unsigned short * d = ((unsigned short *)dst->channel[0]);
 
-	*d = (*d & (0xff                  << (( (offset&1)) << 2))) |
-         (unsigned char)(src * 15.0f) << ((!(offset&1)) << 2)   ;
+	*d = (*d & ~(0xf << shift)) | (nib << shift) ;
 }
 
 static float read_packed8(const struct imgData *data, int offset) {
@@ -185,9 +191,11 @@ write_fnptr get_write_function(enum imgFormat fmt) {
 		if(fmt & (IMG_FMT_COMPONENT_PACKED15))
 			return &write_packed5;
 
+		if(fmt & IMG_FMT_COMPONENT_PACKED16)
 		{
 			// write 4-4-4-4
-			int mask = (IMG_FMT_COMPONENT_PACKED16 | IMG_FMT_COMPONENT_RED | IMG_FMT_COMPONENT_GREEN | IMG_FMT_COMPONENT_BLUE | IMG_FMT_COMPONENT_ALPHA);
+			int mask = (IMG_FMT_COMPONENT_RED | IMG_FMT_COMPONENT_GREEN | IMG_FMT_COMPONENT_BLUE | IMG_FMT_COMPONENT_ALPHA);
+
 			if((fmt & mask) == mask) {
 
 				return &write_packed4;
@@ -244,4 +252,34 @@ void imgWritePacked(struct imgImage *img, int x, int y, struct imgPixel pix) {
 		write_px(&imgData, packed_offset(img->format, IMG_FMT_COMPONENT_ALPHA), pix.alpha);
 
 }
+
+#ifdef PPOPSTEST
+
+int main() {
+
+	unsigned short pixelData = 0;
+
+	struct imgData data;
+
+	int format = IMG_FMT_RGBA16_PMA;
+
+	data.channel[0] = &pixelData;
+	data.channel[1] = NULL;
+	data.channel[2] = NULL;
+	data.channel[3] = NULL;
+
+	write_packed4( &data, packed_offset(format, IMG_FMT_COMPONENT_RED  ), 0.75f );
+	write_packed4( &data, packed_offset(format, IMG_FMT_COMPONENT_GREEN), 0.50f );
+	write_packed4( &data, packed_offset(format, IMG_FMT_COMPONENT_BLUE ), 0.25f );
+	write_packed4( &data, packed_offset(format, IMG_FMT_COMPONENT_ALPHA), 1.00f );
+
+	printf("PIXEL %4x\n", pixelData);
+
+	return 0;
+}
+
+#endif
+
+
+
 
