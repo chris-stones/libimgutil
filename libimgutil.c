@@ -16,11 +16,11 @@
 int imguCopyImage(struct imgImage *dst, const struct imgImage *src) {
 
   if( dst->format & IMG_FMT_COMPONENT_COMPRESSED ) {
-    
+
     imgWriteCompressed( dst, src );
     return 0;
   }
-  
+
   return imguCopyRect( dst,src,0,0,0,0,src->width, src->height );
 }
 
@@ -37,7 +37,7 @@ static imguReadPixel_fptr GetPixelReader(enum imgFormat fmt) {
 
 	if(fmt & IMG_FMT_COMPONENT_COMPRESSED)
 		return &imgReadCompressed;
-  
+
 	if(fmt & IMG_FMT_COMPONENT_PLANAR)
 		return &imgReadPlanar;
 
@@ -49,7 +49,7 @@ static imguWritePixel_fptr GetPixelWriter(enum imgFormat fmt) {
 	if(fmt & IMG_FMT_COMPONENT_COMPRESSED) {
 	  assert(0 && "cannot perform per-pixel writes on compressed images");
 	}
-  
+
 	if(fmt & IMG_FMT_COMPONENT_PLANAR)
 		return &imgWritePlanar;
 
@@ -95,7 +95,7 @@ int imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx, int d
 		//  special case, CbCr needs to be sampled at half YA resolution.
 
 		// TODO: Handle special-case premultiplied alpha here ?
-		
+
 		int x,y,ah,aw;
 		struct imgPixel pixels[2][2];
 
@@ -230,67 +230,147 @@ int imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx, int d
 	else {
 
 		/* generic convert */
-		
+
 		int x,y;
 		struct imgPixel pix;
-		
+
+		/* should we error diffuse the source image format !? */
+		{
+			// TODO: what about blank channels - RGBX, etc !?
+
+			// source bits per channel.
+			int sbipc = (imgGetBytesPerPixel(src->format, 0) * 8) / (!!(src->format & IMG_FMT_COMPONENT_RED)   +
+																  !!(src->format & IMG_FMT_COMPONENT_GREEN) +
+																  !!(src->format & IMG_FMT_COMPONENT_BLUE)  +
+																  !!(src->format & IMG_FMT_COMPONENT_ALPHA) +
+																  !!(src->format & IMG_FMT_COMPONENT_Y)     +
+																  !!(src->format & IMG_FMT_COMPONENT_CB)    +
+																  !!(src->format & IMG_FMT_COMPONENT_CR)    +
+																  !!(src->format & IMG_FMT_COMPONENT_GREY  ));
+
+			// destination bits per channel.
+			int dbipc = (imgGetBytesPerPixel(dst->format, 0) * 8) / (!!(dst->format & IMG_FMT_COMPONENT_RED)   +
+																  !!(dst->format & IMG_FMT_COMPONENT_GREEN) +
+																  !!(dst->format & IMG_FMT_COMPONENT_BLUE)  +
+																  !!(dst->format & IMG_FMT_COMPONENT_ALPHA) +
+																  !!(dst->format & IMG_FMT_COMPONENT_Y)     +
+																  !!(dst->format & IMG_FMT_COMPONENT_CB)    +
+																  !!(dst->format & IMG_FMT_COMPONENT_CR)    +
+																  !!(src->format & IMG_FMT_COMPONENT_GREY  ));
+
+			if( dbipc < sbipc ) {
+
+				// destination has a lower samplerate - we should error diffuse.
+				struct imgImage *_src = NULL;
+
+				if( imgAllocImage( &_src ) == IMG_OKAY ) {
+
+					_src->format 	= IMG_FMT_FLOAT_RGBA;
+					_src->width 	= w;
+					_src->height 	= h;
+
+					if(imgAllocPixelBuffers(_src) == IMG_OKAY) {
+
+						if( need_to_pma( dst, src) ) {
+							struct imgPixel pix;
+							for(y=0;y<h;y++)
+								for(x=0;x<w;x++) {
+									pix = imguReadPixel( src,sx+x,sy+y);
+									premultiply_alpha(&pix);
+									imguWritePixel(_src,x,y, pix);
+							}
+						}
+						else if( need_to_unpma( dst, src) ) {
+							struct imgPixel pix;
+							for(y=0;y<h;y++)
+								for(x=0;x<w;x++) {
+									pix = imguReadPixel( src,sx+x,sy+y);
+									unpremultiply_alpha(&pix);
+									imguWritePixel(_src,x,y, pix);
+							}
+						}
+						else {
+							for(y=0;y<h;y++)
+								for(x=0;x<w;x++)
+									imguWritePixel(_src,x,y, imguReadPixel( src,sx+x,sy+y) );
+						}
+
+						// error diffuse floating point image.
+						error_diffuse_img( _src, dbipc );
+
+						// replaced source image with temorary cropped floating point image, reset sx,sy.
+						sx = sy = 0;
+
+						// write final output.
+						for(y=0;y<h;y++)
+							for(x=0;x<w;x++)
+								imguWritePixel(dst,dx+x,dy+y,
+									imguReadPixel(_src,sx+x,sy+y));
+
+						imgFreeAll(_src);
+
+						return IMG_OKAY;
+					}
+					else {
+						imgFreeImage(_src);
+						return IMG_ERROR;
+					}
+				}
+				else
+					return IMG_ERROR;
+			}
+		}
+
 		if( need_to_pma( dst, src) ) {
-		  
+
 		  for(y=0;y<h;y++)
 		    for(x=0;x<w;x++) {
-		      
+
 		      pix = imguReadPixel(src,sx+x,sy+y);
-		      
+
 		      premultiply_alpha(&pix);
-		      
+
 		      imguWritePixel(dst,dx+x,dy+y,pix);
 		    }
-		  
+
 		} else if( need_to_unpma( dst, src ) ) {
-		  
+
 		  for(y=0;y<h;y++)
 		    for(x=0;x<w;x++) {
-		      
+
 		      pix = imguReadPixel(src,sx+x,sy+y);
-		      
+
 		      unpremultiply_alpha(&pix);
-		      
+
 		      imguWritePixel(dst,dx+x,dy+y,pix);
 		    }
-		  
+
 		} else if( (src->format & IMG_FMT_COMPONENT_PACKED) && (src->format == dst->format ) ) {
-		  
-		  // same packed source and destination formats - coopy raw pixel data.
-		  
+
+		  // same packed source and destination formats - copy raw pixel data.
+
 		  struct imgData src_data;
 		  struct imgData dst_data;
-		  
+
 		  for(y=0;y<h;y++)
 		    for(x=0;x<w;x++) {
-		      src_data = imgGetPixel(src,sx+x, sy+y);
-		      dst_data = imgGetPixel(dst,dx+x, dy+y);
-		      memcpy( dst_data.channel[0], src_data.channel[0], imgGetBytesPerPixel(src->format, 0) );
+		      src_data = imgGetPixel( src,sx+x, sy+y);
+		      dst_data = imgGetPixel( dst,dx+x, dy+y);
+		      memcpy( dst_data.channel[0], src_data.channel[0], imgGetBytesPerPixel( src->format, 0) );
 		    }
-		  
+
 		} else {
-	
+
 		  // generic copy
 		  for(y=0;y<h;y++)
 		    for(x=0;x<w;x++)
 		      imguWritePixel(dst,dx+x,dy+y,
-			imguReadPixel(src,sx+x,sy+y));
+				imguReadPixel( src,sx+x,sy+y));
 		}
 	}
 
 	return IMGU_OKAY;
 }
-
-
-
-
-
-
-
 
 
 

@@ -103,7 +103,7 @@ static float read_packed4(const struct imgData *data, int offset) {
 
 	const unsigned short nib = (*d >> shift) & 0x000f;
 
-	return ((float)(nib)) / 15,0f;
+	return ((float)(nib)) / 15.0f;
 }
 
 static void write_packed4(struct imgData *dst, int offset, float src) {
@@ -135,6 +135,17 @@ static void write_packed16(struct imgData *dst, int offset, float src) {
 	(*(((unsigned short*)dst->channel[0]) + offset)) = (unsigned char)(src * 65535.0f);
 }
 
+static float read_float(const struct imgData *data, int offset) {
+
+	return (*(((float *)data->channel[0])+offset));
+}
+
+static void write_float(struct imgData *dst, int offset, float src) {
+
+	(*(((float*)dst->channel[0]) + offset)) = src;
+}
+
+
 typedef float (*read_fnptr)  (const struct imgData*, int);
 typedef void  (*write_fnptr) (struct imgData*, int, float);
 
@@ -142,6 +153,11 @@ static
 read_fnptr get_read_function(enum imgFormat fmt) {
 
 	if(fmt & IMG_FMT_COMPONENT_PACKED) {
+
+		if(fmt & IMG_FMT_COMPONENT_FLOAT) {
+
+			return &read_float;
+		}
 
 		fmt &= ~IMG_FMT_COMPONENT_PACKED;
 
@@ -180,6 +196,9 @@ write_fnptr get_write_function(enum imgFormat fmt) {
 
 	if(fmt & IMG_FMT_COMPONENT_PACKED) {
 
+		if(fmt & IMG_FMT_COMPONENT_FLOAT)
+			return &write_float;
+
 		fmt &= ~IMG_FMT_COMPONENT_PACKED;
 
 		if(fmt & (IMG_FMT_COMPONENT_PACKED24 | IMG_FMT_COMPONENT_PACKED32))
@@ -203,6 +222,7 @@ write_fnptr get_write_function(enum imgFormat fmt) {
 		}
 	}
 
+	printf("couldnt find a write function for format 0x%x\n", fmt);
 	assert("todo:" && 0);
 
 	return NULL;
