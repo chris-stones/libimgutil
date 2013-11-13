@@ -78,6 +78,11 @@ static struct imgImage *onePixel(enum imgFormat fmt) {
 
 int imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx, int dy, int sx, int sy, int w, int h) {
 
+	return imguCopyRect2(dst, src, dx, dy, sx, sy, w, h, ERR_DIFFUSE_KERNEL_DEFAULT );
+}
+
+int imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx, int dy, int sx, int sy, int w, int h, err_diffuse_kernel_t edk) {
+
 	imguReadPixel_fptr 	imguReadPixel 	= GetPixelReader(src->format);
 	imguWritePixel_fptr imguWritePixel	= GetPixelWriter(dst->format);
 
@@ -235,6 +240,7 @@ int imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx, int d
 		struct imgPixel pix;
 
 		/* should we error diffuse the source image format !? */
+		if( get_error_diffuse_kernel(edk) != ERR_DIFFUSE_KERNEL_NONE )
 		{
 			// TODO: what about blank channels - RGBX, etc !?
 
@@ -296,7 +302,7 @@ int imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx, int d
 						}
 
 						// error diffuse floating point image.
-						error_diffuse_img( _src, dbipc );
+						error_diffuse_img( _src, dbipc, edk );
 
 						// replaced source image with temorary cropped floating point image, reset sx,sy.
 						sx = sy = 0;
