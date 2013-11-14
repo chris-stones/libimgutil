@@ -33,6 +33,7 @@ extern "C" {
 #endif
 
 int imguCopyImage	(struct imgImage *dst, const struct imgImage *src);
+int imguCopyImage2	(struct imgImage *dst, const struct imgImage *src, err_diffuse_kernel_t edk);
 int imguCopyPixel	(struct imgImage *dst, const struct imgImage *src, int dx, int dy, int sx, int sy);
 int imguCopyRect	(struct imgImage *dst, const struct imgImage *src, int dx, int dy, int sx, int sy, int w, int h);
 int imguCopyRect2	(struct imgImage *dst, const struct imgImage *src, int dx, int dy, int sx, int sy, int w, int h, err_diffuse_kernel_t edk);
@@ -42,6 +43,11 @@ int imguPad			(struct imgImage **padded, const struct imgImage *src, int top, in
 
 int imguBinaryCompare	(struct imgImage *a,struct imgImage *b);
 int imguBinaryHash32	(struct imgImage *a);
+
+int imguErrorDiffuseArea(struct imgImage *img, int x, int y, int w, int h, int bits_of_precision, err_diffuse_kernel_t edk);
+int imguErrorDiffuse    (struct imgImage *img,                             int bits_of_precision, err_diffuse_kernel_t edk );
+
+
 
 #ifdef __cplusplus
 } /*** extern "C" { ***/

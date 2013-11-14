@@ -13,7 +13,14 @@
 #include<stdlib.h>
 #include<string.h>
 
+//ERR_DIFFUSE_KERNEL_DEFAULT
+
 int imguCopyImage(struct imgImage *dst, const struct imgImage *src) {
+
+	return imguCopyImage2(dst, src, ERR_DIFFUSE_KERNEL_DEFAULT);
+}
+
+int imguCopyImage2(struct imgImage *dst, const struct imgImage *src, err_diffuse_kernel_t edk) {
 
   if( dst->format & IMG_FMT_COMPONENT_COMPRESSED ) {
 
@@ -21,7 +28,7 @@ int imguCopyImage(struct imgImage *dst, const struct imgImage *src) {
     return 0;
   }
 
-  return imguCopyRect( dst,src,0,0,0,0,src->width, src->height );
+  return imguCopyRect2( dst,src,0,0,0,0,src->width, src->height, 2 );
 }
 
 int imguCopyPixel(struct imgImage *dst, const struct imgImage *src, int dx, int dy, int sx, int sy) {
@@ -302,7 +309,7 @@ int imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx, int 
 						}
 
 						// error diffuse floating point image.
-						error_diffuse_img( _src, dbipc, edk );
+						imguErrorDiffuse( _src, dbipc, edk );
 
 						// replaced source image with temorary cropped floating point image, reset sx,sy.
 						sx = sy = 0;

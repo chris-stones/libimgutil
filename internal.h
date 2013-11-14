@@ -54,8 +54,6 @@ static inline int need_to_unpma(const struct imgImage *dst, const struct imgImag
   return (src->format & IMG_FMT_COMPONENT_PMA);
 }
 
-void error_diffuse_img( struct imgImage *img, int bits_of_precision, err_diffuse_kernel_t edk );
-
 err_diffuse_kernel_t get_error_diffuse_kernel(err_diffuse_kernel_t k);
 
 #ifdef __cplusplus

@@ -36,9 +36,9 @@ static void add_pixel(struct imgImage *img, int bpp, int x, int y, int channel, 
 	pixel[channel] += pix;
 }
 
-static int inbounds(struct imgImage *img, int x, int y) {
+static int inbounds(int bx, int by, int bw, int bh, int x, int y) {
 
-	return !( x<0 || x>=img->width || y<0 || y>=img->height );
+	return !( x<bx || x>=(bx+bw) || y<by || y>=(by+bh) );
 }
 
 err_diffuse_kernel_t get_error_diffuse_kernel(err_diffuse_kernel_t k) {
@@ -49,7 +49,7 @@ err_diffuse_kernel_t get_error_diffuse_kernel(err_diffuse_kernel_t k) {
 	return k;
 }
 
-void _error_diffuse_img( struct imgImage *img, int bits_of_precision, int chan, err_diffuse_kernel_t edk ) {
+static int _error_diffuse_img( struct imgImage *img, int bx, int by, int bw, int bh, int bits_of_precision, int chan, err_diffuse_kernel_t edk ) {
 
 	int x,y,c,bpp;
 
@@ -62,9 +62,18 @@ void _error_diffuse_img( struct imgImage *img, int bits_of_precision, int chan, 
 
 	bpp = imgGetBytesPerPixel(img->format,0);
 
-	for(y=0; y<img->height; y++) {
+	if(bx< 0 || bx >= img->width)  			return IMG_ERROR;
+	if(by< 0 || by >= img->height) 			return IMG_ERROR;
+	if(bw< 0 || ((bx+bw) >= img->width)) 	return IMG_ERROR;
+	if(bh< 0 || ((by+bh) >= img->height))	return IMG_ERROR;
 
-		for(x=0; x<img->width; x++) {
+	for(y=by; y<(by+bh); y++) {
+
+		if(y < 0 || y >= img->height) return IMG_ERROR;
+
+		for(x=bx; x<(bx+bw); x++) {
+
+			if(x < 0 || x >= img->width) return IMG_ERROR;
 
 			for(c=0;c<chan;c++) {
 
@@ -75,9 +84,9 @@ void _error_diffuse_img( struct imgImage *img, int bits_of_precision, int chan, 
 					_new = find_closest_channel_value(_old, bits_of_precision);
 					write_pixel(img,bpp,x,y,c,_new);
 					_err = _old - _new;
-					if(inbounds(img,x+1,y  )) add_pixel( img, bpp, x+1, y  , c, (3.0f/8.0f) * _err );
-					if(inbounds(img,x  ,y+1)) add_pixel( img, bpp, x  , y+1, c, (3.0f/8.0f) * _err );
-					if(inbounds(img,x+1,y+1)) add_pixel( img, bpp, x+1, y+1, c, (2.0f/8.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+1,y  )) add_pixel( img, bpp, x+1, y  , c, (3.0f/8.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x  ,y+1)) add_pixel( img, bpp, x  , y+1, c, (3.0f/8.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+1,y+1)) add_pixel( img, bpp, x+1, y+1, c, (2.0f/8.0f) * _err );
 				break;
 
 				case ERR_DIFFUSE_KERNEL_MEDIUM: /* FLOYD STEINBERG */
@@ -85,10 +94,10 @@ void _error_diffuse_img( struct imgImage *img, int bits_of_precision, int chan, 
 					_new = find_closest_channel_value(_old, bits_of_precision);
 					write_pixel(img,bpp,x,y,c,_new);
 					_err = _old - _new;
-					if(inbounds(img,x+1,y  )) add_pixel( img, bpp, x+1, y  , c, (7.0f/16.0f) * _err );
-					if(inbounds(img,x-1,y+1)) add_pixel( img, bpp, x-1, y+1, c, (3.0f/16.0f) * _err );
-					if(inbounds(img,x  ,y+1)) add_pixel( img, bpp, x  , y+1, c, (5.0f/16.0f) * _err );
-					if(inbounds(img,x+1,y+1)) add_pixel( img, bpp, x+1, y+1, c, (1.0f/16.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+1,y  )) add_pixel( img, bpp, x+1, y  , c, (7.0f/16.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x-1,y+1)) add_pixel( img, bpp, x-1, y+1, c, (3.0f/16.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x  ,y+1)) add_pixel( img, bpp, x  , y+1, c, (5.0f/16.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+1,y+1)) add_pixel( img, bpp, x+1, y+1, c, (1.0f/16.0f) * _err );
 				break;
 
 				case ERR_DIFFUSE_KERNEL_LARGEST: /* J F Jarvis, C N Judice, and W H Ninke */
@@ -96,18 +105,18 @@ void _error_diffuse_img( struct imgImage *img, int bits_of_precision, int chan, 
 					_new = find_closest_channel_value(_old, bits_of_precision);
 					write_pixel(img,bpp,x,y,c,_new);
 					_err = _old - _new;
-					if(inbounds(img,x+1,y  )) add_pixel( img, bpp, x+1, y  , c, (7.0f/48.0f) * _err );
-					if(inbounds(img,x+2,y  )) add_pixel( img, bpp, x+2, y  , c, (5.0f/48.0f) * _err );
-					if(inbounds(img,x-2,y+1)) add_pixel( img, bpp, x-2, y+1, c, (3.0f/48.0f) * _err );
-					if(inbounds(img,x-1,y+1)) add_pixel( img, bpp, x-1, y+1, c, (5.0f/48.0f) * _err );
-					if(inbounds(img,x  ,y+1)) add_pixel( img, bpp, x  , y+1, c, (7.0f/48.0f) * _err );
-					if(inbounds(img,x+1,y+1)) add_pixel( img, bpp, x+1, y+1, c, (5.0f/48.0f) * _err );
-					if(inbounds(img,x+2,y+1)) add_pixel( img, bpp, x+2, y+1, c, (3.0f/48.0f) * _err );
-					if(inbounds(img,x-2,y+2)) add_pixel( img, bpp, x-2, y+2, c, (1.0f/48.0f) * _err );
-					if(inbounds(img,x-1,y+2)) add_pixel( img, bpp, x-1, y+2, c, (3.0f/48.0f) * _err );
-					if(inbounds(img,x  ,y+2)) add_pixel( img, bpp, x  , y+2, c, (5.0f/48.0f) * _err );
-					if(inbounds(img,x+1,y+2)) add_pixel( img, bpp, x+1, y+2, c, (3.0f/48.0f) * _err );
-					if(inbounds(img,x+2,y+2)) add_pixel( img, bpp, x+2, y+2, c, (1.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+1,y  )) add_pixel( img, bpp, x+1, y  , c, (7.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+2,y  )) add_pixel( img, bpp, x+2, y  , c, (5.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x-2,y+1)) add_pixel( img, bpp, x-2, y+1, c, (3.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x-1,y+1)) add_pixel( img, bpp, x-1, y+1, c, (5.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x  ,y+1)) add_pixel( img, bpp, x  , y+1, c, (7.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+1,y+1)) add_pixel( img, bpp, x+1, y+1, c, (5.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+2,y+1)) add_pixel( img, bpp, x+2, y+1, c, (3.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x-2,y+2)) add_pixel( img, bpp, x-2, y+2, c, (1.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x-1,y+2)) add_pixel( img, bpp, x-1, y+2, c, (3.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x  ,y+2)) add_pixel( img, bpp, x  , y+2, c, (5.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+1,y+2)) add_pixel( img, bpp, x+1, y+2, c, (3.0f/48.0f) * _err );
+					if(inbounds(bx,by,bw,bh,x+2,y+2)) add_pixel( img, bpp, x+2, y+2, c, (1.0f/48.0f) * _err );
 				break;
 				}
 			}
@@ -130,12 +139,19 @@ void _error_diffuse_img( struct imgImage *img, int bits_of_precision, int chan, 
 			}
 		}
 	}
+
+	return IMG_OKAY;
 }
 
-void error_diffuse_img( struct imgImage *img, int bits_of_precision, err_diffuse_kernel_t edk ) {
+int imguErrorDiffuseArea(struct imgImage *img, int x, int y, int w, int h, int bits_of_precision, err_diffuse_kernel_t edk) {
 
 	assert(img->format & IMG_FMT_COMPONENT_FLOAT);
 
-	_error_diffuse_img(img, bits_of_precision, imgGetBytesPerPixel(img->format,0) / sizeof(float), edk );
+	return _error_diffuse_img(img, x,y,w,h,bits_of_precision, imgGetBytesPerPixel(img->format,0) / sizeof(float), edk );
+}
+
+int  imguErrorDiffuse( struct imgImage *img, int bits_of_precision, err_diffuse_kernel_t edk ) {
+
+	return imguErrorDiffuseArea(img, 0, 0, img->width, img->height, bits_of_precision, edk);
 }
 
