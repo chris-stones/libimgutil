@@ -175,7 +175,9 @@ struct imgPixel imgReadPlanar(const struct imgImage *img, int x, int y) {
 
 	struct imgPixel pix = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-	float Y, Cb, Cr;
+	float Y = 0.0f;
+	float Cb = 0.0f;
+	float Cr = 0.0f;
 
 	struct imgData imgData = imgGetPixel(img, x, y);
 
