@@ -4,12 +4,6 @@ project(imgutil)
 
 set(CMAKE_C_FLAGS_RELEASE "-O4 -march=native")
 
-add_definitions(-DWITH_IMGU_ROTATE)
-add_definitions(-DWITH_IMGU_PAD)
-
-add_definitions(-DUSE_LIBTXC_DXTN)
-add_definitions(-DUSE_LIBSQUISH)
-
 include_directories ("${PROJECT_SOURCE_DIR}")
 
 FILE(GLOB c_source_files *.c)
