@@ -86,6 +86,7 @@ static int glFormatToCSquishFormat(GLenum glFmt) {
 		return SQUISH_kDxt5 | SQUISH_kColourIterativeClusterFit;
 	}
 	assert(0);
+	return 0; // quiet GCC
 }
 
 //static const char * glFormatToString( GLenum glFmt ) {

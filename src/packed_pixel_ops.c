@@ -204,7 +204,9 @@ static read_fnptr get_read_function(enum imgFormat fmt) {
 	return NULL;
 }
 
-static write_fnptr get_write_function(enum imgFormat fmt) {
+static write_fnptr get_write_function(enum imgFormat _fmt) {
+
+	enum imgFormat fmt = _fmt;
 
 	if (fmt & IMG_FMT_COMPONENT_PACKED) {
 
@@ -234,7 +236,7 @@ static write_fnptr get_write_function(enum imgFormat fmt) {
 		}
 	}
 
-	printf("couldnt find a write function for format 0x%x\n", fmt);
+	printf("couldnt find a write function for format 0x%x (0x%0x)\n", _fmt, fmt);
 	assert("todo:" && 0);
 
 	return NULL;
