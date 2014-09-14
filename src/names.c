@@ -73,6 +73,7 @@ const struct name_struct name_struct[] = {
 	ENTRY(DXT1),
 	ENTRY(DXT3),
 	ENTRY(DXT5),
+	ENTRY(ETC1),
 
 	// compressed formats with pre-multiplied alpha
 	ENTRY(DXT4),

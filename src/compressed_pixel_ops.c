@@ -24,8 +24,14 @@
  * https://github.com/chris-stones/libcsquish.git
  */
 #include<csquish.h>
-#include<assert.h>
 
+/***
+ * rg_etc1 used for texture compression / decompression
+ * https://code.google.com/p/rg-etc1/
+ ***/
+#include "3rdparty/rg_etc1.h"
+
+#include<assert.h>
 #include <pthread.h>
 
 struct imgPixel imgReadCompressed(const struct imgImage *img, int x, int y) {
@@ -34,20 +40,26 @@ struct imgPixel imgReadCompressed(const struct imgImage *img, int x, int y) {
 
 	struct imgPixel pix = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-	switch (img->format & IMG_FMT_COMPONENT_DXTn) {
-	case IMG_FMT_COMPONENT_DXT1: // no alpha
+	if( ( img->format & IMG_FMT_COMPONENT_COMPRESSION_INDEX_MASK ) == IMG_FMT_COMPONENT_ETC1_INDEX ) {
+
+		assert( 0 && "ETC1 DECOMPRESS NOT YET IMPLEMENTED!" );
+		return pix;
+	}
+
+	switch (img->format & IMG_FMT_COMPONENT_COMPRESSION_INDEX_MASK) {
+	case IMG_FMT_COMPONENT_DXT1_INDEX: // no alpha
 
 		fetch_2d_texel_rgb_dxt1(img->linesize[0], img->data.channel[0], x, y,
 				decompressed);
 		break;
 
-	case IMG_FMT_COMPONENT_DXT3: // sharp alpha
+	case IMG_FMT_COMPONENT_DXT3_INDEX: // sharp alpha
 
 		fetch_2d_texel_rgba_dxt3(img->linesize[0], img->data.channel[0], x, y,
 				decompressed);
 		break;
 
-	case IMG_FMT_COMPONENT_DXT5: // gradient alpha
+	case IMG_FMT_COMPONENT_DXT5_INDEX: // gradient alpha
 
 		fetch_2d_texel_rgba_dxt5(img->linesize[0], img->data.channel[0], x, y,
 				decompressed);
@@ -88,20 +100,6 @@ static int glFormatToCSquishFormat(GLenum glFmt) {
 	assert(0);
 	return 0; // quiet GCC
 }
-
-//static const char * glFormatToString( GLenum glFmt ) {
-//
-//  switch(glFmt) {
-//    case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
-//    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-//      return "SQUISH_kDxt1 | SQUISH_kColourIterativeClusterFit";
-//    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-//      return "SQUISH_kDxt3 | SQUISH_kColourIterativeClusterFit";
-//   case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-//      return "SQUISH_kDxt5 | SQUISH_kColourIterativeClusterFit";
-//  }
-//  assert(0);
-//}
 
 struct job_struct {
 
@@ -203,7 +201,6 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 
 	// TODO: unlike other pixel operations, this can fail. ENOMEM etc. HANDLE IT
 
-//int components;
 	int err;
 	/////////  UGLY! /////////////////////////////////
 	// src is a pointer to const src parameter
@@ -214,20 +211,74 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 	//////////////////////////////////////////////////
 	GLenum gl_fmt;
 
-	if ((dst->format & IMG_FMT_COMPONENT_DXTn) == IMG_FMT_COMPONENT_DXT1) {
+	if ((dst->format & IMG_FMT_COMPONENT_COMPRESSION_INDEX_MASK) == IMG_FMT_COMPONENT_ETC1_INDEX) {
 
-//  components = 3;
-//  components = 4;
+//		gl_fmt = 0x8D64; /* ETC1_RGB8_OES; ( name string GL_OES_compressed_ETC1_RGB8_texture ) */
 
-		gl_fmt = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+		if ((src->format != IMG_FMT_RGBA32) || (src->width % 4) || (src->height % 4)) {
 
-//  if(src->format != IMG_FMT_RGB24) {
+			src = NULL;
+			err = imgAllocImage(&src);
+			assert(err == IMG_OKAY);
+			src->format = IMG_FMT_RGBA32;
+			src->width = _src->width;
+			src->height = _src->height;
+			if(src->width % 4)
+				src->width += 4 - (src->width % 4);
+			if(src->height % 4)
+				src->height += 4 - (src->height % 4);
+
+			err = imgAllocPixelBuffers(src);
+			assert(err == IMG_OKAY);
+			err = imguCopyImage(src, _src);
+		}
+
+		rg_etc1_pack_etc1_block_init();
+
+		{
+			// TODO: this needs threading!
+			char * dst_data_etc1 = (char *)dst->data.channel[0];
+			const int * src_data_rgba32 = (const int *)src->data.channel[0];
+			int srcblock[16];
+			int x,y;
+			struct rg_etc1_etc1_pack_params etc1_params;
+			etc1_params.m_dithering = 1;
+			etc1_params.m_quality = cHighQuality;
+
+			for(y=0;y<src->height;y+=4)
+				for(x=0;x<src->width;x+=4) {
+
+					srcblock[ 0] = src_data_rgba32[x + 0 + ((y+0) * src->width)];
+					srcblock[ 1] = src_data_rgba32[x + 1 + ((y+0) * src->width)];
+					srcblock[ 2] = src_data_rgba32[x + 2 + ((y+0) * src->width)];
+					srcblock[ 3] = src_data_rgba32[x + 3 + ((y+0) * src->width)];
+					srcblock[ 4] = src_data_rgba32[x + 0 + ((y+1) * src->width)];
+					srcblock[ 5] = src_data_rgba32[x + 1 + ((y+1) * src->width)];
+					srcblock[ 6] = src_data_rgba32[x + 2 + ((y+1) * src->width)];
+					srcblock[ 7] = src_data_rgba32[x + 3 + ((y+1) * src->width)];
+					srcblock[ 8] = src_data_rgba32[x + 0 + ((y+2) * src->width)];
+					srcblock[ 9] = src_data_rgba32[x + 1 + ((y+2) * src->width)];
+					srcblock[10] = src_data_rgba32[x + 2 + ((y+2) * src->width)];
+					srcblock[11] = src_data_rgba32[x + 3 + ((y+2) * src->width)];
+					srcblock[12] = src_data_rgba32[x + 0 + ((y+3) * src->width)];
+					srcblock[13] = src_data_rgba32[x + 1 + ((y+3) * src->width)];
+					srcblock[14] = src_data_rgba32[x + 2 + ((y+3) * src->width)];
+					srcblock[15] = src_data_rgba32[x + 3 + ((y+3) * src->width)];
+
+					rg_etc1_pack_etc1_block(dst_data_etc1,srcblock,&etc1_params);
+					dst_data_etc1 += 8;
+				}
+		}
+	}
+	else if ((dst->format & IMG_FMT_COMPONENT_COMPRESSION_INDEX_MASK) == IMG_FMT_COMPONENT_DXT1_INDEX) {
+
+		const GLenum gl_fmt = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+
 		if (src->format != IMG_FMT_RGBA32) {
 
 			src = NULL;
 			err = imgAllocImage(&src);
 			assert(err == IMG_OKAY);
-//    src->format = IMG_FMT_RGB24;
 			src->format = IMG_FMT_RGBA32;
 			src->width = _src->width;
 			src->height = _src->height;
@@ -235,15 +286,19 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 			assert(err == IMG_OKAY);
 			err = imguCopyImage(src, _src);
 		}
+
+		squish_CompressImage_mt(src->data.channel[0], src->width, src->height,
+			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt), NULL);
+
 	} else {
 
-//    components = 4;
+		GLenum gl_fmt;
 
-		switch (dst->format & IMG_FMT_COMPONENT_DXTn) {
-		case IMG_FMT_COMPONENT_DXT3:
+		switch (dst->format & IMG_FMT_COMPONENT_COMPRESSION_INDEX_MASK) {
+		case IMG_FMT_COMPONENT_DXT3_INDEX:
 			gl_fmt = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
 			break;
-		case IMG_FMT_COMPONENT_DXT5:
+		case IMG_FMT_COMPONENT_DXT5_INDEX:
 			gl_fmt = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			break;
 		default:
@@ -264,16 +319,17 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 			src->height = _src->height;
 			err = imgAllocPixelBuffers(src);
 			assert(err == IMG_OKAY);
-			assert((src->format & IMG_FMT_COMPONENT_DXTn) == 0); // imguCopyImage uses this function to handle compressed textures. avoid infinite recursion!
+			assert((src->format & IMG_FMT_COMPONENT_COMPRESSED) == 0); // imguCopyImage uses this function to handle compressed textures. avoid infinite recursion!
 			err = imguCopyImage(src, _src);
 		}
+
+		squish_CompressImage_mt(src->data.channel[0], src->width, src->height,
+			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt), NULL);
 	}
 
-	squish_CompressImage_mt(src->data.channel[0], src->width, src->height,
-			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt), NULL);
-
-	if (src != _src)
+	if (src != _src) {
 		imgFreeAll(src);
+	}
 
 }
 
