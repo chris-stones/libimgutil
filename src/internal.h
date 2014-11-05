@@ -5,8 +5,15 @@
  *      Author: cds
  */
 
-#ifndef INTERNAL_H_
-#define INTERNAL_H_
+#pragma once
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef HAVE_GL_GL_H
+	#include <GL/gl.h>
+#endif
 
 #include "libimgutil.h"
 
@@ -61,4 +68,3 @@ err_diffuse_kernel_t get_error_diffuse_kernel(err_diffuse_kernel_t k);
 } /*** extern "C" { ***/
 #endif
 
-#endif /* INTERNAL_H_ */

@@ -17,7 +17,7 @@
  * http://cgit.freedesktop.org/~mareko/libtxc_dxtn/
  * on Gentoo - "emerge media-libs/libtxc_dxtn"
  */
-#include<txc_dxtn.h>
+//#include<txc_dxtn.h>
 
 /***
  * <csquish.h> used for texture compression.
@@ -31,14 +31,16 @@
  ***/
 #include "3rdparty/rg_etc1.h"
 
-#include<assert.h>
+#include <assert.h>
 #include <pthread.h>
 
 struct imgPixel imgReadCompressed(const struct imgImage *img, int x, int y) {
 
-	unsigned char decompressed[4] = { 255, 0, 255, 255 }; // RGBA
+	assert( 0 && "PIXEL DECOMPRESS NOT YET IMPLEMENTED!" );
 
 	struct imgPixel pix = { 0.0f, 0.0f, 0.0f, 1.0f };
+	/*
+	unsigned char decompressed[4] = { 255, 0, 255, 255 }; // RGBA
 
 	if( ( img->format & IMG_FMT_COMPONENT_COMPRESSION_INDEX_MASK ) == IMG_FMT_COMPONENT_ETC1_INDEX ) {
 
@@ -71,6 +73,7 @@ struct imgPixel imgReadCompressed(const struct imgImage *img, int x, int y) {
 	pix.blue = ((float) decompressed[2]) / 255.0f;
 	pix.alpha = ((float) decompressed[3]) / 255.0f;
 
+*/
 	return pix;
 }
 
