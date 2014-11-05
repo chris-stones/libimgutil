@@ -17,6 +17,9 @@
 //#include <stdio.h>
 #include <math.h>
 
+#include <thread>
+#include <mutex>
+
 #pragma warning (disable: 4201) //  nonstandard extension used : nameless struct/union
 
 #if defined(_DEBUG) || defined(DEBUG)
@@ -2449,7 +2452,9 @@ extern "C" {
 
 void rg_etc1_pack_etc1_block_init() {
 
-	rg_etc1::pack_etc1_block_init();
+	static std::once_flag flag;
+
+	std::call_once( flag, [](){rg_etc1::pack_etc1_block_init();} );
 }
 
 int rg_etc1_unpack_etc1_block(const void *pETC1_block, unsigned int* pDst_pixels_rgba, int preserve_alpha) {
