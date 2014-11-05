@@ -22,13 +22,19 @@ int imguCopyImage(struct imgImage *dst, const struct imgImage *src) {
 int imguCopyImage2(struct imgImage *dst, const struct imgImage *src,
 		err_diffuse_kernel_t edk) {
 
+	return imguCopyImage3(dst, src, edk, COPY_QUALITY_DEFAULT);
+}
+
+int imguCopyImage3(struct imgImage *dst, const struct imgImage *src,
+		err_diffuse_kernel_t edk, copy_quality_t quality) {
+
 	if (dst->format & IMG_FMT_COMPONENT_COMPRESSED) {
 
-		imgWriteCompressed(dst, src);
+		imgWriteCompressed(dst, src, quality);
 		return 0;
 	}
 
-	return imguCopyRect2(dst, src, 0, 0, 0, 0, src->width, src->height, 2);
+	return imguCopyRect2(dst, src, 0, 0, 0, 0, src->width, src->height, edk);
 }
 
 int imguCopyPixel(struct imgImage *dst, const struct imgImage *src, int dx,

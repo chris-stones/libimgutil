@@ -86,16 +86,31 @@ static int neet_to_reformat(const struct imgImage *dst,
 	return (src->format & IMG_FMT_RGB24) != IMG_FMT_RGB24;
 }
 
-static int glFormatToCSquishFormat(GLenum glFmt) {
+static int glFormatToCSquishFormat(GLenum glFmt, copy_quality_t quality) {
+
+	int qualityFlags;
+
+	switch(quality) {
+	default:
+	case COPY_QUALITY_HIGHEST:
+		qualityFlags = SQUISH_kColourIterativeClusterFit;
+		break;
+	case COPY_QUALITY_MEDIUM:
+		qualityFlags = SQUISH_kColourClusterFit;
+		break;
+	case COPY_QUALITY_LOWEST:
+		qualityFlags = SQUISH_kColourRangeFit;
+		break;
+	}
 
 	switch (glFmt) {
 	case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
 	case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-		return SQUISH_kDxt1 | SQUISH_kColourIterativeClusterFit;
+		return SQUISH_kDxt1  | qualityFlags;
 	case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-		return SQUISH_kDxt3 | SQUISH_kColourIterativeClusterFit;
+		return SQUISH_kDxt3 | qualityFlags;
 	case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-		return SQUISH_kDxt5 | SQUISH_kColourIterativeClusterFit;
+		return SQUISH_kDxt5 | qualityFlags;
 	}
 	assert(0);
 	return 0; // quiet GCC
@@ -111,7 +126,7 @@ struct job_struct {
 	float * metric;
 };
 
-static void* thread_func(void * arg) {
+static void* dxtX_thread_func(void * arg) {
 
 	struct job_struct * job = (struct job_struct *) arg;
 
@@ -184,9 +199,9 @@ void squish_CompressImage_mt(unsigned char const* rgba, int width, int height,
 
 			y += h;
 #ifndef WIN32
-			pthread_create(pthreads + thread, NULL, &thread_func, job);
+			pthread_create(pthreads + thread, NULL, &dxtX_thread_func, job);
 #else
-			thread_func(job);
+			dxtX_thread_func(job);
 #endif
 		}
 #ifndef WIN32
@@ -197,9 +212,12 @@ void squish_CompressImage_mt(unsigned char const* rgba, int width, int height,
 		squish_CompressImage(rgba, width, height, blocks, flags, metric);
 }
 
-void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
+void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_quality_t quality) {
 
 	// TODO: unlike other pixel operations, this can fail. ENOMEM etc. HANDLE IT
+
+	if(quality == COPY_QUALITY_DEFAULT || quality == COPY_QUALITY_NONE)
+		quality = COPY_QUALITY_HIGHEST;
 
 	int err;
 	/////////  UGLY! /////////////////////////////////
@@ -209,11 +227,8 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 	struct imgImage *_src = &vsrc;
 	struct imgImage *src = _src;
 	//////////////////////////////////////////////////
-	GLenum gl_fmt;
 
 	if ((dst->format & IMG_FMT_COMPONENT_COMPRESSION_INDEX_MASK) == IMG_FMT_COMPONENT_ETC1_INDEX) {
-
-//		gl_fmt = 0x8D64; /* ETC1_RGB8_OES; ( name string GL_OES_compressed_ETC1_RGB8_texture ) */
 
 		if ((src->format != IMG_FMT_RGBA32) || (src->width % 4) || (src->height % 4)) {
 
@@ -243,7 +258,19 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 			int x,y;
 			struct rg_etc1_etc1_pack_params etc1_params;
 			etc1_params.m_dithering = 1;
-			etc1_params.m_quality = cHighQuality;
+
+			switch(quality) {
+			default:
+			case COPY_QUALITY_HIGHEST:
+				etc1_params.m_quality = cHighQuality;
+				break;
+			case COPY_QUALITY_MEDIUM:
+				etc1_params.m_quality = cMediumQuality;
+				break;
+			case COPY_QUALITY_LOWEST:
+				etc1_params.m_quality = cLowQuality;
+				break;
+			}
 
 			for(y=0;y<src->height;y+=4)
 				for(x=0;x<src->width;x+=4) {
@@ -265,7 +292,7 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 					srcblock[14] = src_data_rgba32[x + 2 + ((y+3) * src->width)];
 					srcblock[15] = src_data_rgba32[x + 3 + ((y+3) * src->width)];
 
-					rg_etc1_pack_etc1_block(dst_data_etc1,srcblock,&etc1_params);
+					rg_etc1_pack_etc1_block(dst_data_etc1,(const unsigned int*)srcblock,&etc1_params);
 					dst_data_etc1 += 8;
 				}
 		}
@@ -288,7 +315,7 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 		}
 
 		squish_CompressImage_mt(src->data.channel[0], src->width, src->height,
-			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt), NULL);
+			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt, quality), NULL);
 
 	} else {
 
@@ -324,7 +351,7 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc) {
 		}
 
 		squish_CompressImage_mt(src->data.channel[0], src->width, src->height,
-			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt), NULL);
+			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt, quality), NULL);
 	}
 
 	if (src != _src) {

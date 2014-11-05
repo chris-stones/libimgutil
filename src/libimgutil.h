@@ -31,6 +31,20 @@ typedef enum {
 
 } err_diffuse_kernel_t;
 
+/*
+ * quality settings.
+ * presently used only in texture compression.
+ */
+typedef enum {
+
+	COPY_QUALITY_NONE = 0,
+	COPY_QUALITY_DEFAULT = 1,
+	COPY_QUALITY_LOWEST = 100,
+	COPY_QUALITY_MEDIUM = 10000,
+	COPY_QUALITY_HIGHEST = 1000000,
+
+} copy_quality_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,6 +52,9 @@ extern "C" {
 int imguCopyImage(struct imgImage *dst, const struct imgImage *src);
 int imguCopyImage2(struct imgImage *dst, const struct imgImage *src,
 		err_diffuse_kernel_t edk);
+int imguCopyImage3(struct imgImage *dst, const struct imgImage *src,
+		err_diffuse_kernel_t edk, copy_quality_t quality);
+
 int imguCopyPixel(struct imgImage *dst, const struct imgImage *src, int dx,
 		int dy, int sx, int sy);
 int imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx,
