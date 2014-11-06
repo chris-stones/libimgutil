@@ -30,8 +30,7 @@ int imguCopyImage3(struct imgImage *dst, const struct imgImage *src,
 
 	if (dst->format & IMG_FMT_COMPONENT_COMPRESSED) {
 
-		imgWriteCompressed(dst, src, quality);
-		return 0;
+		return imgWriteCompressed(dst, src, quality);
 	}
 
 	return imguCopyRect2(dst, src, 0, 0, 0, 0, src->width, src->height, edk);

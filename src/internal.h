@@ -42,7 +42,7 @@ void imgWritePacked(struct imgImage *img, int x, int y, struct imgPixel pix);
 
 void imgWritePlanar(struct imgImage *img, int x, int y, struct imgPixel pix);
 
-void imgWriteCompressed(struct imgImage *dstimg, const struct imgImage *srcimg, copy_quality_t quality);
+int imgWriteCompressed(struct imgImage *dstimg, const struct imgImage *srcimg, copy_quality_t quality);
 
 static inline int need_to_pma(const struct imgImage *dst,
 		const struct imgImage *src) {

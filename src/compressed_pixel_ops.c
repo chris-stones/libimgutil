@@ -215,7 +215,7 @@ void squish_CompressImage_mt(unsigned char const* rgba, int width, int height,
 		squish_CompressImage(rgba, width, height, blocks, flags, metric);
 }
 
-void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_quality_t quality) {
+int imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_quality_t quality) {
 
 	// TODO: unlike other pixel operations, this can fail. ENOMEM etc. HANDLE IT
 
@@ -231,9 +231,15 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_
 	struct imgImage *src = _src;
 	//////////////////////////////////////////////////
 
+	if(dst->width != csrc->width || dst->height != csrc->height)
+		return -1; // src and dst must be same size.
+
+	if(dst->width % 4 || dst->height % 4)
+		return -1; // sizes must be multiples of 4.
+
 	if ((dst->format & IMG_FMT_COMPONENT_COMPRESSION_INDEX_MASK) == IMG_FMT_COMPONENT_ETC1_INDEX) {
 
-		if ((src->format != IMG_FMT_RGBA32) || (src->width % 4) || (src->height % 4)) {
+		if (src->format != IMG_FMT_RGBA32) {
 
 			src = NULL;
 			err = imgAllocImage(&src);
@@ -241,10 +247,6 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_
 			src->format = IMG_FMT_RGBA32;
 			src->width = _src->width;
 			src->height = _src->height;
-			if(src->width % 4)
-				src->width += 4 - (src->width % 4);
-			if(src->height % 4)
-				src->height += 4 - (src->height % 4);
 
 			err = imgAllocPixelBuffers(src);
 			assert(err == IMG_OKAY);
@@ -361,5 +363,6 @@ void imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_
 		imgFreeAll(src);
 	}
 
+	return 0;
 }
 
