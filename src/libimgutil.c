@@ -376,6 +376,7 @@ int imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx,
 			struct imgData src_data;
 			struct imgData dst_data;
 
+			// FIXME: memcpy one pixel at a time!?
 			for (y = 0; y < h; y++)
 				for (x = 0; x < w; x++) {
 					src_data = imgGetPixel(src, sx + x, sy + y);
@@ -383,6 +384,31 @@ int imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx,
 					memcpy(dst_data.channel[0], src_data.channel[0],
 							imgGetBytesPerPixel(src->format, 0));
 				}
+
+		} else if ( ( src->format == IMG_FMT_RGB24 ) && ( dst->format == IMG_FMT_RGBA32 ) ) {
+
+			// RGB24 -> RGBA32 is common... ( DXT / ETC texture compression libraries require it )
+			//  This will be much faster than the generic copy!
+
+			for (y = 0; y < h; y++) {
+
+				unsigned char * spix = ((unsigned char *)src->data.channel[0])
+					+ (src->linesize[0] * (sy+y))
+					+ (sx * 3);
+
+				unsigned char * dpix = ((unsigned char *)dst->data.channel[0])
+					+ (dst->linesize[0] * (dy+y))
+					+ (dx * 4);
+
+				for (x = 0; x < w; x++) {
+					dpix[0] = spix[0];
+					dpix[1] = spix[1];
+					dpix[2] = spix[2];
+					dpix[3] = 0xff;
+					dpix+=4;
+					spix+=3;
+				}
+			}
 
 		} else {
 
