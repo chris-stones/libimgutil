@@ -376,14 +376,14 @@ int imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx,
 			struct imgData src_data;
 			struct imgData dst_data;
 
-			// FIXME: memcpy one pixel at a time!?
-			for (y = 0; y < h; y++)
-				for (x = 0; x < w; x++) {
-					src_data = imgGetPixel(src, sx + x, sy + y);
-					dst_data = imgGetPixel(dst, dx + x, dy + y);
-					memcpy(dst_data.channel[0], src_data.channel[0],
-							imgGetBytesPerPixel(src->format, 0));
-				}
+			for (y = 0; y < h; y++) {
+
+				src_data = imgGetPixel(src, sx + 0, sy + y);
+				dst_data = imgGetPixel(dst, dx + 0, dy + y);
+
+				memcpy(dst_data.channel[0], src_data.channel[0],
+						w * imgGetBytesPerPixel(src->format, 0));
+			}
 
 		} else if ( ( src->format == IMG_FMT_RGB24 ) && ( dst->format == IMG_FMT_RGBA32 ) ) {
 
