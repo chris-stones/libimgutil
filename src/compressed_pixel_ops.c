@@ -119,102 +119,6 @@ static int glFormatToCSquishFormat(GLenum glFmt, copy_quality_t quality) {
 	return 0; // quiet GCC
 }
 
-struct job_struct {
-
-	unsigned char const* rgba;
-	void * blocks;
-	int w;
-	int h;
-	int flags;
-	float * metric;
-};
-
-static void* dxtX_thread_func(void * arg) {
-
-	struct job_struct * job = (struct job_struct *) arg;
-
-	squish_CompressImage(job->rgba, job->w, job->h, job->blocks, job->flags,
-			job->metric);
-
-	free(job);
-
-	return NULL;
-}
-
-void squish_CompressImage_mt(unsigned char const* rgba, int width, int height,
-		void* blocks, int flags, float* metric) {
-
-	// TODO: implement threading on win32.
-
-	int number_of_threads = 1;
-
-	if (width * height > 4096) {
-
-#if defined(WIN32)
-		SYSTEM_INFO sysinfo;
-		GetSystemInfo( &sysinfo );
-		number_of_threads = sysinfo.dwNumberOfProcessors;
-#else
-		number_of_threads = sysconf( _SC_NPROCESSORS_ONLN);
-#endif
-
-		if (number_of_threads < 1)
-			number_of_threads = 4; // can't determine, assume 4 threads.
-
-		if (number_of_threads > ((height + 3) / 4))
-			number_of_threads = (height + 3) / 4;
-
-		if (number_of_threads < 1)
-			number_of_threads = 1;
-	}
-
-	if (number_of_threads > 1) {
-		int thread;
-		int h = 0;
-		int y = 0;
-		int hblocks = ((((height + 3) / 4) + number_of_threads)
-				/ number_of_threads);
-
-#ifndef WIN32
-		pthread_t * pthreads = alloca(sizeof(pthread_t) * number_of_threads);
-#endif
-
-		for (thread = 0; thread < number_of_threads; thread++) {
-
-			struct job_struct * job = malloc(sizeof(struct job_struct));
-
-			h = 4 * hblocks;
-			if ((y + h) > height)
-				h = height - y;
-
-			job->w = width;
-			job->h = h;
-			job->flags = flags;
-			job->metric = metric;
-			job->rgba = rgba + job->w * y * 4;
-
-			if (flags & SQUISH_kDxt1)
-				job->blocks = ((char*) blocks)
-						+ (((width + 3) / 4) * ((y + 3) / 4) * 8);
-			else
-				job->blocks = ((char*) blocks)
-						+ (((width + 3) / 4) * ((y + 3) / 4) * 16);
-
-			y += h;
-#ifndef WIN32
-			pthread_create(pthreads + thread, NULL, &dxtX_thread_func, job);
-#else
-			dxtX_thread_func(job);
-#endif
-		}
-#ifndef WIN32
-		for (; thread > 0; thread--)
-			pthread_join(pthreads[thread - 1], NULL);
-#endif
-	} else
-		squish_CompressImage(rgba, width, height, blocks, flags, metric);
-}
-
 int imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_quality_t quality) {
 
 	// TODO: unlike other pixel operations, this can fail. ENOMEM etc. HANDLE IT
@@ -319,7 +223,7 @@ int imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_q
 			err = imguCopyImage(src, _src);
 		}
 
-		squish_CompressImage_mt(src->data.channel[0], src->width, src->height,
+		squish_CompressImage(src->data.channel[0], src->width, src->height,
 			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt, quality), NULL);
 
 	} else {
