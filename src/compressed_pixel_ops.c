@@ -259,7 +259,7 @@ int imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_q
 			err = imguCopyImage(src, _src);
 		}
 
-		squish_CompressImage_mt(src->data.channel[0], src->width, src->height,
+		squish_CompressImage(src->data.channel[0], src->width, src->height,
 			dst->data.channel[0], glFormatToCSquishFormat(gl_fmt, quality), NULL);
 	}
 
