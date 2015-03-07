@@ -32,7 +32,6 @@
 #include "3rdparty/rg_etc1.h"
 
 #include <assert.h>
-#include <pthread.h>
 
 struct imgPixel imgReadCompressed(const struct imgImage *img, int x, int y) {
 
