@@ -8,11 +8,23 @@
 #pragma once
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+	#include <config.h>
+#else
+	// NOT AN AUTOTOOLS BUILD... setup some sane defaults...
+	#define HAVE_GL_GL_H 1
 #endif
 
 #ifdef HAVE_GL_GL_H
+	#if defined(_MSC_VER)
+		#include<Windows.h>
+	#endif
 	#include <GL/gl.h>
+#endif
+
+#if defined(_MSC_VER)
+	#define INLINE __inline
+#else
+	#define INLINE inline
 #endif
 
 #include "libimgutil.h"
@@ -44,7 +56,7 @@ void imgWritePlanar(struct imgImage *img, int x, int y, struct imgPixel pix);
 
 int imgWriteCompressed(struct imgImage *dstimg, const struct imgImage *srcimg, copy_quality_t quality);
 
-static inline int need_to_pma(const struct imgImage *dst,
+static INLINE int need_to_pma(const struct imgImage *dst,
 		const struct imgImage *src) {
 
 	if (!(dst->format & IMG_FMT_COMPONENT_PMA))
@@ -53,7 +65,7 @@ static inline int need_to_pma(const struct imgImage *dst,
 	return !(src->format & IMG_FMT_COMPONENT_PMA);
 }
 
-static inline int need_to_unpma(const struct imgImage *dst,
+static INLINE int need_to_unpma(const struct imgImage *dst,
 		const struct imgImage *src) {
 
 	if (dst->format & IMG_FMT_COMPONENT_PMA)

@@ -3,7 +3,7 @@
 #include <string.h>
 
 
-int imguPad(struct imgImage **padded, const struct imgImage *src, int top, int bot, int left, int right) {
+int LIBIMGUTIL_DLL imguPad(struct imgImage **padded, const struct imgImage *src, int top, int bot, int left, int right) {
 
 	struct imgImage *out = NULL;
 

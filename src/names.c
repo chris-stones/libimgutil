@@ -2,6 +2,12 @@
 #include<libimg.h>
 #include<string.h>
 
+// TODO:
+#if defined(_MSC_VER)
+	#define HAVE__stricmp 1
+#else
+	#define HAVE_STRCASECMP 1
+#endif
 
 struct name_struct {
 
@@ -91,6 +97,27 @@ const struct name_struct name_struct[] = {
 	ENTRY(FLOAT_ABGR),
 	ENTRY(FLOAT_XBGR),
 };
+
+#if defined(_MSC_VER)
+#include <ctype.h>
+static int strcasecmp(const char *s1, const char *s2)
+{
+	unsigned i;
+
+	for (i = 0; s1[i] && s2[i]; i++)
+	{
+		unsigned char c1 = tolower((unsigned char)s1[i]);
+		unsigned char c2 = tolower((unsigned char)s2[i]);
+
+		if (c1 < c2)
+			return -1;
+		else if (c1 > c2)
+			return 1;
+	}
+
+	return !s2[i] - !s1[i];
+}
+#endif
 
 enum imgFormat imguGetFormatByName(const char * name) {
 
