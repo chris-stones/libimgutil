@@ -24,7 +24,6 @@ AC_SEARCH_LIBS(
   
 AC_CHECK_HEADERS([libimg.h],[],[AC_MSG_ERROR([Missing libimg.h])])
 
-AC_WITH([swscale],[--with-swscale]
 
 CXXFLAGS="$CXXFLAGS -std=c++11"
 
