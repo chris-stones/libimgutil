@@ -14,18 +14,18 @@
 
 //ERR_DIFFUSE_KERNEL_DEFAULT
 
-int imguCopyImage(struct imgImage *dst, const struct imgImage *src) {
+int LIBIMGUTIL_DLL imguCopyImage(struct imgImage *dst, const struct imgImage *src) {
 
 	return imguCopyImage2(dst, src, ERR_DIFFUSE_KERNEL_DEFAULT);
 }
 
-int imguCopyImage2(struct imgImage *dst, const struct imgImage *src,
+int LIBIMGUTIL_DLL imguCopyImage2(struct imgImage *dst, const struct imgImage *src,
 		err_diffuse_kernel_t edk) {
 
 	return imguCopyImage3(dst, src, edk, COPY_QUALITY_DEFAULT);
 }
 
-int imguCopyImage3(struct imgImage *dst, const struct imgImage *src,
+int LIBIMGUTIL_DLL imguCopyImage3(struct imgImage *dst, const struct imgImage *src,
 		err_diffuse_kernel_t edk, copy_quality_t quality) {
 
 	if (dst->format & IMG_FMT_COMPONENT_COMPRESSED) {
@@ -36,7 +36,7 @@ int imguCopyImage3(struct imgImage *dst, const struct imgImage *src,
 	return imguCopyRect2(dst, src, 0, 0, 0, 0, src->width, src->height, edk);
 }
 
-int imguCopyPixel(struct imgImage *dst, const struct imgImage *src, int dx,
+int LIBIMGUTIL_DLL imguCopyPixel(struct imgImage *dst, const struct imgImage *src, int dx,
 		int dy, int sx, int sy) {
 
 	return imguCopyRect(dst, src, dx, dy, sx, sy, 1, 1);
@@ -87,14 +87,14 @@ static struct imgImage *onePixel(enum imgFormat fmt) {
 	return img;
 }
 
-int imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx,
+int LIBIMGUTIL_DLL imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx,
 		int dy, int sx, int sy, int w, int h) {
 
 	return imguCopyRect2(dst, src, dx, dy, sx, sy, w, h,
 			ERR_DIFFUSE_KERNEL_DEFAULT);
 }
 
-int imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx,
+int LIBIMGUTIL_DLL imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx,
 		int dy, int sx, int sy, int w, int h, err_diffuse_kernel_t edk) {
 
 	imguReadPixel_fptr imguReadPixel = GetPixelReader(src->format);

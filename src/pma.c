@@ -1,6 +1,12 @@
 
 #include "internal.h"
 
+#if defined(_MSC_VER)
+#define INLINE __inline
+#else
+#define INLINE inline
+#endif
+
 void premultiply_alpha(struct imgPixel * pix) {
 
 	pix->red *= pix->alpha;
@@ -8,7 +14,7 @@ void premultiply_alpha(struct imgPixel * pix) {
 	pix->blue *= pix->alpha;
 }
 
-static inline void unpma(float * f, float a) {
+static INLINE void unpma(float * f, float a) {
 
 	if (a < (1.0f / 255.0f))
 		*f = 0.0f;

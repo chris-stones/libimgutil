@@ -190,7 +190,7 @@ static int _error_diffuse_img(struct imgImage *img, int bx, int by, int bw,
 	return IMG_OKAY;
 }
 
-int imguErrorDiffuseArea(struct imgImage *img, int x, int y, int w, int h,
+int LIBIMGUTIL_DLL imguErrorDiffuseArea(struct imgImage *img, int x, int y, int w, int h,
 		int bits_of_precision, err_diffuse_kernel_t edk) {
 
 	assert(img->format & IMG_FMT_COMPONENT_FLOAT);
@@ -199,7 +199,7 @@ int imguErrorDiffuseArea(struct imgImage *img, int x, int y, int w, int h,
 			imgGetBytesPerPixel(img->format, 0) / sizeof(float), edk);
 }
 
-int imguErrorDiffuse(struct imgImage *img, int bits_of_precision,
+int LIBIMGUTIL_DLL imguErrorDiffuse(struct imgImage *img, int bits_of_precision,
 		err_diffuse_kernel_t edk) {
 
 	return imguErrorDiffuseArea(img, 0, 0, img->width, img->height,

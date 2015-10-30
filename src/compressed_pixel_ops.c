@@ -162,8 +162,8 @@ int imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_q
 			// TODO: this needs threading!
 			char * dst_data_etc1 = (char *)dst->data.channel[0];
 			const int * src_data_rgba32 = (const int *)src->data.channel[0];
-			int srcblock[16];
-			int x,y;
+			unsigned int srcblock[16];
+			int x,y,a;
 			struct rg_etc1_etc1_pack_params etc1_params;
 			etc1_params.m_dithering = 1;
 
@@ -199,6 +199,10 @@ int imgWriteCompressed(struct imgImage *dst, const struct imgImage *csrc, copy_q
 					srcblock[13] = src_data_rgba32[x + 1 + ((y+3) * src->width)];
 					srcblock[14] = src_data_rgba32[x + 2 + ((y+3) * src->width)];
 					srcblock[15] = src_data_rgba32[x + 3 + ((y+3) * src->width)];
+
+					// Set alpha channel to 0xFF
+					for (a = 3; a < sizeof(srcblock); a += 4)
+						*(((unsigned char*)(srcblock)) + a) = 0xff;
 
 					rg_etc1_pack_etc1_block(dst_data_etc1,(const unsigned int*)srcblock,&etc1_params);
 					dst_data_etc1 += 8;

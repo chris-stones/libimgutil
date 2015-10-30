@@ -2454,7 +2454,17 @@ void rg_etc1_pack_etc1_block_init() {
 
 	static std::once_flag flag;
 
-	std::call_once( flag, [](){rg_etc1::pack_etc1_block_init();} );
+#if defined(_DEBUG)
+	// visual studio debugger seems to be very confused by lambdas... or maybe std::call_once !?
+	bool calledIt = false;
+	if(!calledIt)
+	{
+		calledIt = true;
+		rg_etc1::pack_etc1_block_init();
+	}
+#else
+	std::call_once(flag, [](){rg_etc1::pack_etc1_block_init(); });
+#endif
 }
 
 int rg_etc1_unpack_etc1_block(const void *pETC1_block, unsigned int* pDst_pixels_rgba, int preserve_alpha) {
@@ -2468,7 +2478,7 @@ unsigned int rg_etc1_pack_etc1_block(void* pETC1_block, const unsigned int* pSrc
 
 	rg_etc1::etc1_pack_params cpp_pack_params;
 
-	cpp_pack_params.m_dithering = pack_params->m_dithering;
+	cpp_pack_params.m_dithering = !!(pack_params->m_dithering);
 	cpp_pack_params.m_quality   = static_cast<rg_etc1::etc1_quality>(pack_params->m_quality);
 
 	return rg_etc1::pack_etc1_block(pETC1_block, pSrc_pixels_rgba, cpp_pack_params);

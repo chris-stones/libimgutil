@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <string.h>
 
-int imguRotateCW(struct imgImage **rotated, const struct imgImage *src) {
+int LIBIMGUTIL_DLL imguRotateCW(struct imgImage **rotated, const struct imgImage *src) {
 
 	struct imgImage *out = NULL;
 

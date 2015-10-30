@@ -5,8 +5,17 @@
  *      Author: cds
  */
 
-#ifndef LIBIMGUTIL_H_
-#define LIBIMGUTIL_H_
+#pragma once
+
+#if defined(_MSC_VER)
+#if defined(LIBIMGUTIL_EXPORTS)
+#define LIBIMGUTIL_DLL __declspec(dllexport)
+#else
+#define LIBIMGUTIL_DLL __declspec(dllimport)
+#endif
+#else
+#define LIBIMG_DLL
+#endif
 
 /***
  * https://github.com/chris-stones/libimg
@@ -49,36 +58,36 @@ typedef enum {
 extern "C" {
 #endif
 
-int imguCopyImage(struct imgImage *dst, const struct imgImage *src);
-int imguCopyImage2(struct imgImage *dst, const struct imgImage *src,
+int LIBIMGUTIL_DLL imguCopyImage(struct imgImage *dst, const struct imgImage *src);
+int LIBIMGUTIL_DLL imguCopyImage2(struct imgImage *dst, const struct imgImage *src,
 		err_diffuse_kernel_t edk);
-int imguCopyImage3(struct imgImage *dst, const struct imgImage *src,
+int LIBIMGUTIL_DLL imguCopyImage3(struct imgImage *dst, const struct imgImage *src,
 		err_diffuse_kernel_t edk, copy_quality_t quality);
 
-int imguCopyPixel(struct imgImage *dst, const struct imgImage *src, int dx,
+int LIBIMGUTIL_DLL imguCopyPixel(struct imgImage *dst, const struct imgImage *src, int dx,
 		int dy, int sx, int sy);
-int imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx,
+int LIBIMGUTIL_DLL imguCopyRect(struct imgImage *dst, const struct imgImage *src, int dx,
 		int dy, int sx, int sy, int w, int h);
-int imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx,
+int LIBIMGUTIL_DLL imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx,
 		int dy, int sx, int sy, int w, int h, err_diffuse_kernel_t edk);
 
-int imguRotateCW(struct imgImage **rotated, const struct imgImage *src);
-int imguPad(struct imgImage **padded, const struct imgImage *src, int top,
+int LIBIMGUTIL_DLL imguRotateCW(struct imgImage **rotated, const struct imgImage *src);
+int LIBIMGUTIL_DLL imguPad(struct imgImage **padded, const struct imgImage *src, int top,
 		int bot, int left, int right);
 
-int imguBinaryCompare(struct imgImage *a, struct imgImage *b);
-int imguBinaryHash32(struct imgImage *a);
+int LIBIMGUTIL_DLL imguBinaryCompare(struct imgImage *a, struct imgImage *b);
+int LIBIMGUTIL_DLL imguBinaryHash32(struct imgImage *a);
 
-int imguErrorDiffuseArea(struct imgImage *img, int x, int y, int w, int h,
+int LIBIMGUTIL_DLL imguErrorDiffuseArea(struct imgImage *img, int x, int y, int w, int h,
 		int bits_of_precision, err_diffuse_kernel_t edk);
-int imguErrorDiffuse(struct imgImage *img, int bits_of_precision,
+int LIBIMGUTIL_DLL imguErrorDiffuse(struct imgImage *img, int bits_of_precision,
 		err_diffuse_kernel_t edk);
 
-enum imgFormat imguGetFormatByName(const char * name);
-const char * imguGetFormatName(enum imgFormat fmt);
+enum imgFormat LIBIMGUTIL_DLL imguGetFormatByName(const char * name);
+const char LIBIMGUTIL_DLL * imguGetFormatName(enum imgFormat fmt);
 
 #ifdef __cplusplus
 } /*** extern "C" { ***/
 #endif
 
-#endif /* LIBIMGUTIL_H_ */
+
