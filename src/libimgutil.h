@@ -8,13 +8,13 @@
 #pragma once
 
 #if defined(_MSC_VER)
-#if defined(LIBIMGUTIL_EXPORTS)
-#define LIBIMGUTIL_DLL __declspec(dllexport)
+  #if defined(LIBIMGUTIL_EXPORTS)
+    #define LIBIMGUTIL_DLL __declspec(dllexport)
+  #else
+    #define LIBIMGUTIL_DLL __declspec(dllimport)
+  #endif
 #else
-#define LIBIMGUTIL_DLL __declspec(dllimport)
-#endif
-#else
-#define LIBIMG_DLL
+  #define LIBIMGUTIL_DLL
 #endif
 
 /***
