@@ -323,7 +323,7 @@ int imguCopyRect2(struct imgImage *dst, const struct imgImage *src, int dx,
 						// error diffuse floating point image.
 						imguErrorDiffuse(_src, dbipc, edk);
 
-						// replaced source image with temorary cropped floating point image, reset sx,sy.
+						// replaced source image with temporary cropped floating point image, reset sx,sy.
 						sx = sy = 0;
 
 						// write final output.

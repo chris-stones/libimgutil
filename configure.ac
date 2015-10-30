@@ -12,16 +12,6 @@ AC_CONFIG_MACRO_DIR([m4])
 LT_INIT
 AM_INIT_AUTOMAKE([subdir-objects])
 
-#AX_PTHREAD(
-#  [
-#    LIBS="$PTHREAD_LIBS $LIBS"
-#    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-#    CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
-#    CC="$PTHREAD_CC"
-#  ],
-#  []
-#)
-
 AC_SEARCH_LIBS(
   [squish_Compress],[csquish],[],
   AC_MSG_ERROR([Unable to find csquish library]))
@@ -33,6 +23,8 @@ AC_SEARCH_LIBS(
   AC_MSG_ERROR([Unable to find libimg library]))
   
 AC_CHECK_HEADERS([libimg.h],[],[AC_MSG_ERROR([Missing libimg.h])])
+
+AC_WITH([swscale],[--with-swscale]
 
 CXXFLAGS="$CXXFLAGS -std=c++11"
 

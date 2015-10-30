@@ -19,8 +19,8 @@ int imguRotateCW(struct imgImage **rotated, const struct imgImage *src) {
 		return -1;
 	}
 
-	assert( !(src->format & IMG_FMT_COMPONENT_COMPRESSED) && "TODO: impliment compressed rotation" );
-	assert( !(src->format & IMG_FMT_COMPONENT_PLANAR) && "TODO: impliment planar rotation" );
+	assert( !(src->format & IMG_FMT_COMPONENT_COMPRESSED) && "TODO: implement compressed rotation" );
+	assert( !(src->format & IMG_FMT_COMPONENT_PLANAR) && "TODO: implement planar rotation" );
 
 	{
 		int sx,sy,dx,dy,channels,channel;
